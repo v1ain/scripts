@@ -1,0 +1,535 @@
+--// Services
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+local Workspace = game:GetService("Workspace")
+local UserInputService = game:GetService("UserInputService")
+local HttpService = game:GetService("HttpService") -- Required for HttpsGet
+
+--// Local Player
+local LocalPlayer = Players.LocalPlayer
+local LocalPlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+
+--// GUI Creation
+local MainGUI = Instance.new("ScreenGui")
+MainGUI.Name = "VNHub"
+MainGUI.Parent = LocalPlayerGui
+MainGUI.ResetOnSpawn = false
+
+local DraggableFrame = Instance.new("Frame")
+DraggableFrame.Name = "DraggableFrame"
+DraggableFrame.Size = UDim2.new(0, 300, 0, 200) -- Adjusted size for phone
+DraggableFrame.Position = UDim2.new(0.1, 0, 0.1, 0) -- Positioned away from edges
+DraggableFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+DraggableFrame.BorderSizePixel = 0
+DraggableFrame.Parent = MainGUI
+DraggableFrame.Draggable = true
+
+local TitleBar = Instance.new("Frame")
+TitleBar.Name = "TitleBar"
+TitleBar.Size = UDim2.new(1, 0, 0, 20)
+TitleBar.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+TitleBar.BorderSizePixel = 0
+TitleBar.Parent = DraggableFrame
+
+local TitleLabel = Instance.new("TextLabel")
+TitleLabel.Name = "TitleLabel"
+TitleLabel.Size = UDim2.new(0.8, 0, 1, 0) -- Adjusted size for buttons
+TitleLabel.Position = UDim2.new(0, 0, 0, 0)
+TitleLabel.BackgroundColor3 = Color3.new(1, 1, 1)
+TitleLabel.BackgroundTransparency = 1
+TitleLabel.TextColor3 = Color3.new(1, 1, 1)
+TitleLabel.Text = "VNHub by v1ain"
+TitleLabel.Font = Enum.Font.SourceSansBold
+TitleLabel.TextSize = 14
+TitleLabel.TextXAlignment = Enum.TextXAlignment.Center
+TitleLabel.TextYAlignment = Enum.TextYAlignment.Center
+TitleLabel.Parent = TitleBar
+
+local TabsFrame = Instance.new("Frame")
+TabsFrame.Name = "TabsFrame"
+TabsFrame.Size = UDim2.new(0, 100, 1, -20)
+TabsFrame.Position = UDim2.new(0, 0, 0, 20)
+TabsFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+TabsFrame.BorderSizePixel = 0
+TabsFrame.Parent = DraggableFrame
+
+local ContentFrame = Instance.new("Frame")
+ContentFrame.Name = "ContentFrame"
+ContentFrame.Size = UDim2.new(1, -100, 1, -20)
+ContentFrame.Position = UDim2.new(0, 100, 0, 20)
+ContentFrame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+ContentFrame.BorderSizePixel = 0
+ContentFrame.Parent = DraggableFrame
+
+--// Hide/Show Button
+local HideButton = Instance.new("TextButton")
+HideButton.Name = "HideButton"
+HideButton.Size = UDim2.new(0.1, 0, 1, 0)
+HideButton.Position = UDim2.new(0.8, 0, 0, 0)
+HideButton.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+HideButton.BorderSizePixel = 0
+HideButton.TextColor3 = Color3.new(1, 1, 1)
+HideButton.Text = "-" -- Minimize symbol
+HideButton.Font = Enum.Font.SourceSansBold
+HideButton.TextSize = 14
+HideButton.Parent = TitleBar
+
+--// Close Button
+local CloseButton = Instance.new("TextButton")
+CloseButton.Name = "CloseButton"
+CloseButton.Size = UDim2.new(0.1, 0, 1, 0)
+CloseButton.Position = UDim2.new(0.9, 0, 0, 0)
+CloseButton.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+CloseButton.BorderSizePixel = 0
+CloseButton.TextColor3 = Color3.new(1, 1, 1)
+CloseButton.Text = "X" -- Close symbol
+CloseButton.Font = Enum.Font.SourceSansBold
+CloseButton.TextSize = 14
+CloseButton.Parent = TitleBar
+
+--// Hidden Button
+local HiddenButton = Instance.new("TextButton")
+HiddenButton.Name = "HiddenButton"
+HiddenButton.Size = UDim2.new(0, 30, 0, 30)
+HiddenButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+HiddenButton.BorderSizePixel = 0
+HiddenButton.TextColor3 = Color3.new(1, 1, 1)
+HiddenButton.Text = ""
+HiddenButton.Font = Enum.Font.SourceSansBold
+HiddenButton.TextSize = 14
+HiddenButton.Visible = false -- Initially hidden
+HiddenButton.Draggable = true
+HiddenButton.Parent = MainGUI
+
+--// Fade In Text
+local function FadeInText()
+	local tweenInfo = TweenInfo.new(
+		2, -- Time
+		Enum.EasingStyle.Quad, -- EasingStyle
+		Enum.EasingDirection.Out, -- EasingDirection
+		0, -- RepeatCount (when less than zero the tween will loop indefinitely)
+		false, -- Reverses (tween will reverse once reaching its goal)
+		0 -- DelayTime
+	)
+
+	local tween = TweenService:Create(TitleLabel, tweenInfo, {TextTransparency = 1})
+	tween:Play()
+	tween.Completed:Connect(function()
+		TitleLabel:Destroy()
+	end)
+end
+
+--// Tab Creation Function
+local function CreateTabButton(tabName)
+	local TabButton = Instance.new("TextButton")
+	TabButton.Name = tabName .. "TabButton"
+	TabButton.Size = UDim2.new(1, 0, 0, 30)
+	TabButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+	TabButton.BorderSizePixel = 0
+	TabButton.TextColor3 = Color3.new(1, 1, 1)
+	TabButton.Text = tabName
+	TabButton.Font = Enum.Font.SourceSansBold
+	TabButton.TextSize = 14
+	TabButton.Parent = TabsFrame
+
+	local function ClearContent()
+		for i, v in pairs(ContentFrame:GetChildren()) do
+			if v:IsA("GuiObject") then
+				v:Destroy()
+			end
+		end
+	end
+
+	TabButton.MouseButton1Click:Connect(function()
+		ClearContent()
+		UpdateContent(tabName)
+	end)
+
+	return TabButton
+end
+
+--// Content Update Function
+local function UpdateContent(tabName)
+	if tabName == "Information" then
+		--// Player Avatar
+		local AvatarImage = Instance.new("ImageLabel")
+		AvatarImage.Name = "AvatarImage"
+		AvatarImage.Size = UDim2.new(0, 100, 0, 100)
+		AvatarImage.Position = UDim2.new(0.5, -0.5, 0.1, 0)
+		AvatarImage.BackgroundTransparency = 1
+		AvatarImage.Image = Players:GetUserThumbnailAsync(LocalPlayer.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size100x100)
+		AvatarImage.Parent = ContentFrame
+
+		--// Display Name
+		local DisplayNameLabel = Instance.new("TextLabel")
+		DisplayNameLabel.Name = "DisplayNameLabel"
+		DisplayNameLabel.Size = UDim2.new(1, 0, 0, 20)
+		DisplayNameLabel.Position = UDim2.new(0, 0, 0.5, 0)
+		DisplayNameLabel.BackgroundColor3 = Color3.new(1, 1, 1)
+		DisplayNameLabel.BackgroundTransparency = 1
+		DisplayNameLabel.TextColor3 = Color3.new(1, 1, 1)
+		DisplayNameLabel.Text = "Display Name: " .. LocalPlayer.DisplayName
+		DisplayNameLabel.Font = Enum.Font.SourceSansBold
+		DisplayNameLabel.TextSize = 14
+		DisplayNameLabel.TextXAlignment = Enum.TextXAlignment.Center
+		DisplayNameLabel.Parent = ContentFrame
+
+		--// User ID
+		local UserIDLabel = Instance.new("TextLabel")
+		UserIDLabel.Name = "UserIDLabel"
+		UserIDLabel.Size = UDim2.new(1, 0, 0, 20)
+		UserIDLabel.Position = UDim2.new(0, 0, 0.6, 0)
+		UserIDLabel.BackgroundColor3 = Color3.new(1, 1, 1)
+		UserIDLabel.BackgroundTransparency = 1
+		UserIDLabel.TextColor3 = Color3.new(1, 1, 1)
+		UserIDLabel.Text = "User ID: " .. LocalPlayer.UserId
+		UserIDLabel.Font = Enum.Font.SourceSansBold
+		UserIDLabel.TextSize = 14
+		UserIDLabel.TextXAlignment = Enum.TextXAlignment.Center
+		UserIDLabel.Parent = ContentFrame
+
+		--// Account Age
+		local AccountAgeLabel = Instance.new("TextLabel")
+		AccountAgeLabel.Name = "AccountAgeLabel"
+		AccountAgeLabel.Size = UDim2.new(1, 0, 0, 20)
+		AccountAgeLabel.Position = UDim2.new(0, 0, 0.7, 0)
+		AccountAgeLabel.BackgroundColor3 = Color3.new(1, 1, 1)
+		AccountAgeLabel.BackgroundTransparency = 1
+		AccountAgeLabel.TextColor3 = Color3.new(1, 1, 1)
+		UserIDLabel.Text = "Account Age: " .. LocalPlayer.AccountAge
+		UserIDLabel.Font = Enum.Font.SourceSansBold
+		UserIDLabel.TextSize = 14
+		UserIDLabel.TextXAlignment = Enum.TextXAlignment.Center
+		UserIDLabel.Parent = ContentFrame
+
+	elseif tabName == "Combat" then
+		--// NPC Lock Button
+		local NPCLockButton = Instance.new("TextButton")
+		NPCLockButton.Name = "NPCLockButton"
+		NPCLockButton.Size = UDim2.new(0.5, 0, 0, 30)
+		NPCLockButton.Position = UDim2.new(0.25, 0, 0.2, 0)
+		NPCLockButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+		NPCLockButton.BorderSizePixel = 0
+		NPCLockButton.TextColor3 = Color3.new(1, 1, 1)
+		NPCLockButton.Text = "NPC Lock"
+		NPCLockButton.Font = Enum.Font.SourceSansBold
+		NPCLockButton.TextSize = 14
+		NPCLockButton.Parent = ContentFrame
+
+		local lockedNPC = nil
+		local originalCameraType = Enum.CameraType.Custom
+
+		local function LockCameraToNPC(npc)
+			if npc then
+				lockedNPC = npc
+				originalCameraType = game.Workspace.CurrentCamera.CameraType
+				game.Workspace.CurrentCamera.CameraType = Enum.CameraType.Scriptable
+
+				RunService:BindToRenderStep("NPCLockCamera", Enum.RenderPriority.Camera.Value + 1, function()
+					if lockedNPC and lockedNPC:IsDescendantOf(Workspace) then
+						game.Workspace.CurrentCamera.CFrame = CFrame.lookAt(
+							LocalPlayer.Character.Head.Position,
+							lockedNPC.HumanoidRootPart.Position
+						) * CFrame.new(0, 0, 5) -- Adjust distance as needed
+					else
+						UnlockCamera()
+					end
+				end)
+			end
+		end
+
+		local function UnlockCamera()
+			lockedNPC = nil
+			RunService:UnbindFromRenderStep("NPCLockCamera")
+			game.Workspace.CurrentCamera.CameraType = originalCameraType
+		end
+
+		NPCLockButton.MouseButton1Click:Connect(function()
+			if lockedNPC then
+				UnlockCamera()
+				NPCLockButton.Text = "NPC Lock"
+			else
+				--// Find Nearest NPC (Non-Player)
+				local nearestNPC = nil
+				local nearestDistance = math.huge
+
+				for i, v in pairs(Workspace:GetDescendants()) do
+					if v:IsA("Model") and v:FindFirstChild("Humanoid") and v ~= LocalPlayer.Character then
+						local distance = (LocalPlayer.Character.HumanoidRootPart.Position - v.PrimaryPart.Position).Magnitude
+						if distance < nearestDistance then
+							nearestDistance = distance
+							nearestNPC = v
+						end
+					end
+				end
+
+				if nearestNPC then
+					LockCameraToNPC(nearestNPC)
+					NPCLockButton.Text = "Unlock NPC"
+				else
+					warn("No NPCs found nearby.")
+				end
+			end
+		end)
+
+	elseif tabName == "Visual" then
+		--// Unlock Thirdperson Cam Button
+		local UnlockThirdPersonButton = Instance.new("TextButton")
+		UnlockThirdPersonButton.Name = "UnlockThirdPersonButton"
+		UnlockThirdPersonButton.Size = UDim2.new(0.5, 0, 0, 30)
+		UnlockThirdPersonButton.Position = UDim2.new(0.25, 0, 0.1, 0)
+		UnlockThirdPersonButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+		UnlockThirdPersonButton.BorderSizePixel = 0
+		UnlockThirdPersonButton.TextColor3 = Color3.new(1, 1, 1)
+		UnlockThirdPersonButton.Text = "Unlock Thirdperson Cam"
+		UnlockThirdPersonButton.Font = Enum.Font.SourceSansBold
+		UnlockThirdPersonButton.TextSize = 14
+		UnlockThirdPersonButton.Parent = ContentFrame
+
+		UnlockThirdPersonButton.MouseButton1Click:Connect(function()
+			game.Workspace.CurrentCamera.CameraType = Enum.CameraType.Fixed
+		end)
+
+		--// Item ESP Button
+		local ItemESPButton = Instance.new("TextButton")
+		ItemESPButton.Name = "ItemESPButton"
+		ItemESPButton.Size = UDim2.new(0.5, 0, 0, 30)
+		ItemESPButton.Position = UDim2.new(0.25, 0, 0.3, 0)
+		ItemESPButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+		ItemESPButton.BorderSizePixel = 0
+		ItemESPButton.TextColor3 = Color3.new(1, 1, 1)
+		ItemESPButton.Text = "Item ESP"
+		ItemESPButton.Font = Enum.Font.SourceSansBold
+		ItemESPButton.TextSize = 14
+		ItemESPButton.Parent = ContentFrame
+
+		--// Monster ESP Button
+		local MonsterESPButton = Instance.new("TextButton")
+		MonsterESPButton.Name = "MonsterESPButton"
+		MonsterESPButton.Size = UDim2.new(0.5, 0, 0, 30)
+		MonsterESPButton.Position = UDim2.new(0.25, 0, 0.5, 0)
+		MonsterESPButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+		MonsterESPButton.BorderSizePixel = 0
+		MonsterESPButton.TextColor3 = Color3.new(1, 1, 1)
+		MonsterESPButton.Text = "Monster ESP"
+		MonsterESPButton.Font = Enum.Font.SourceSansBold
+		MonsterESPButton.TextSize = 14
+		MonsterESPButton.Parent = ContentFrame
+
+		--// Turn Off All ESP Button
+		local TurnOffAllESPButton = Instance.new("TextButton")
+		TurnOffAllESPButton.Name = "TurnOffAllESPButton"
+		TurnOffAllESPButton.Size = UDim2.new(0.5, 0, 0, 30)
+		TurnOffAllESPButton.Position = UDim2.new(0.25, 0, 0.7, 0)
+		TurnOffAllESPButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+		TurnOffAllESPButton.BorderSizePixel = 0
+		TurnOffAllESPButton.TextColor3 = Color3.new(1, 1, 1)
+		TurnOffAllESPButton.Text = "Turn Off All ESP"
+		TurnOffAllESPButton.Font = Enum.Font.SourceSansBold
+		TurnOffAllESPButton.TextSize = 14
+		TurnOffAllESPButton.Parent = ContentFrame
+
+		local itemOutlines = {}
+		local monsterOutlines = {}
+
+		local function CreateESP(folderName, outlineTable)
+			local folder = Workspace:FindFirstChild(folderName)
+			if folder then
+				for i, obj in pairs(folder:GetDescendants()) do
+					if obj:IsA("BasePart") then
+						local outline = Instance.new("OutlineEffect")
+						outline.Parent = obj
+						outline.Color = Color3.fromRGB(0, 255, 0) -- Green outline
+						table.insert(outlineTable, outline)
+
+						local nameLabel = Instance.new("BillboardGui")
+						nameLabel.Name = "NameLabel"
+						nameLabel.Size = UDim2.new(2, 0, 1, 0)
+						nameLabel.Adornee = obj
+						nameLabel.AlwaysOnTop = true
+						nameLabel.StudsOffset = Vector3.new(0, 2, 0) -- Adjust position above object
+						nameLabel.Parent = obj
+
+						local textLabel = Instance.new("TextLabel")
+						textLabel.Size = UDim2.new(1, 0, 1, 0)
+						textLabel.BackgroundTransparency = 1
+						textLabel.TextColor3 = Color3.new(1, 1, 1)
+						textLabel.Text = obj.Name
+						textLabel.Font = Enum.Font.SourceSansBold
+						textLabel.TextSize = 14
+						textLabel.TextScaled = true
+						textLabel.TextXAlignment = Enum.TextXAlignment.Center
+						textLabel.Parent = nameLabel
+					end
+				end
+			end
+		end
+
+		local function DestroyAllOutlines(outlineTable)
+			for i, outline in pairs(outlineTable) do
+				if outline and outline.Parent then
+					outline:Destroy()
+				end
+			end
+			table.clear(outlineTable)
+
+			for i, obj in pairs(Workspace:GetDescendants()) do
+				if obj:IsA("BillboardGui") and obj.Name == "NameLabel" then
+					obj:Destroy()
+				end
+			end
+		end
+
+		ItemESPButton.MouseButton1Click:Connect(function()
+			CreateESP("RuntimeItems", itemOutlines)
+		end)
+
+		MonsterESPButton.MouseButton1Click:Connect(function()
+			CreateESP("RuntimeEntities", monsterOutlines)
+		end)
+
+		TurnOffAllESPButton.MouseButton1Click:Connect(function()
+			DestroyAllOutlines(itemOutlines)
+			DestroyAllOutlines(monsterOutlines)
+		end)
+	elseif tabName == "Teleports" then
+		--// Teleport to End Button
+		local TeleportToEndButton = Instance.new("TextButton")
+		TeleportToEndButton.Name = "TeleportToEndButton"
+		TeleportToEndButton.Size = UDim2.new(0.5, 0, 0, 30)
+		TeleportToEndButton.Position = UDim2.new(0.25, 0, 0.1, 0)
+		TeleportToEndButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+		TeleportToEndButton.BorderSizePixel = 0
+		TeleportToEndButton.TextColor3 = Color3.new(1, 1, 1)
+		TeleportToEndButton.Text = "Teleport to End"
+		TeleportToEndButton.Font = Enum.Font.SourceSansBold
+		TeleportToEndButton.TextSize = 14
+		TeleportToEndButton.Parent = ContentFrame
+
+		TeleportToEndButton.MouseButton1Click:Connect(function()
+			--// Execute the script
+			local success, message = pcall(function()
+				loadstring(game:HttpGet("https://raw.githubusercontent.com/TwoGunVolley/Dedrail/refs/heads/main/Protected_8860927939362090.txt"))()
+			end)
+
+			if not success then
+				warn("Error executing Teleport to End script: " .. message)
+			end
+		end)
+
+		--// Teleport to Castle Button
+		local TeleportToCastleButton = Instance.new("TextButton")
+		TeleportToCastleButton.Name = "TeleportToCastleButton"
+		TeleportToCastleButton.Size = UDim2.new(0.5, 0, 0, 30)
+		TeleportToCastleButton.Position = UDim2.new(0.25, 0, 0.3, 0)
+		TeleportToCastleButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+		TeleportToCastleButton.BorderSizePixel = 0
+		TeleportToCastleButton.TextColor3 = Color3.new(1, 1, 1)
+		TeleportToCastleButton.Text = "Teleport to Castle"
+		TeleportToCastleButton.Font = Enum.Font.SourceSansBold
+		TeleportToCastleButton.TextSize = 14
+		TeleportToCastleButton.Parent = ContentFrame
+
+		TeleportToCastleButton.MouseButton1Click:Connect(function()
+			--// Execute the script
+			local success, message = pcall(function()
+				loadstring(game:HttpGet("https://raw.githubusercontent.com/ringtaa/castletpfast.github.io/refs/heads/main/FASTCASTLE.lua"))()
+			end)
+
+			if not success then
+				warn("Error executing Teleport to Castle script: " .. message)
+			end
+		end)
+
+		--// Teleport to Fort Button
+		local TeleportToFortButton = Instance.new("TextButton")
+		TeleportToFortButton.Name = "TeleportToFortButton"
+		TeleportToFortButton.Size = UDim2.new(0.5, 0, 0, 30)
+		TeleportToFortButton.Position = UDim2.new(0.25, 0, 0.5, 0)
+		TeleportToFortButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+		TeleportToFortButton.BorderSizePixel = 0
+		TeleportToFortButton.TextColor3 = Color3.new(1, 1, 1)
+		TeleportToFortButton.Text = "Teleport to Fort"
+		TeleportToFortButton.Font = Enum.Font.SourceSansBold
+		TeleportToFortButton.TextSize = 14
+		TeleportToFortButton.Parent = ContentFrame
+
+		TeleportToFortButton.MouseButton1Click:Connect(function()
+			--// Execute the script
+			local success, message = pcall(function()
+				loadstring(game:HttpGet("https://raw.githubusercontent.com/ringtaa/Tpfort.github.io/refs/heads/main/Tpfort.lua"))()
+			end)
+
+			if not success then
+				warn("Error executing Teleport to Fort script: " .. message)
+			end
+		end)
+
+		--// Teleport to Tesla Lab Button
+		local TeleportToTeslaLabButton = Instance.new("TextButton")
+		TeleportToTeslaLabButton.Name = "TeleportToTeslaLabButton"
+		TeleportToTeslaLabButton.Size = UDim2.new(0.5, 0, 0, 30)
+		TeleportToTeslaLabButton.Position = UDim2.new(0.25, 0, 0.7, 0)
+		TeleportToTeslaLabButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+		TeleportToTeslaLabButton.BorderSizePixel = 0
+		TeleportToTeslaLabButton.TextColor3 = Color3.new(1, 1, 1)
+		TeleportToTeslaLabButton.Text = "Teleport to Tesla Lab"
+		TeleportToTeslaLabButton.Font = Enum.Font.SourceSansBold
+		TeleportToTeslaLabButton.TextSize = 14
+		TeleportToTeslaLabButton.Parent = ContentFrame
+
+		TeleportToTeslaLabButton.MouseButton1Click:Connect(function()
+			--// Execute the script
+			local success, message = pcall(function()
+				loadstring(game:HttpGet('https://raw.githubusercontent.com/ringtaa/tptotesla.github.io/refs/heads/main/Tptotesla.lua'))()
+			end)
+
+			if not success then
+				warn("Error executing Teleport to Tesla Lab script: " .. message)
+			end
+		end)
+
+		--// Teleport to Sterling Button
+		local TeleportToSterlingButton = Instance.new("TextButton")
+		TeleportToSterlingButton.Name = "TeleportToSterlingButton"
+		TeleportToSterlingButton.Size = UDim2.new(0.5, 0, 0, 30)
+		TeleportToSterlingButton.Position = UDim2.new(0.25, 0, 0.9, 0)
+		TeleportToSterlingButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+		TeleportToSterlingButton.BorderSizePixel = 0
+		TeleportToSterlingButton.TextColor3 = Color3.new(1, 1, 1)
+		TeleportToSterlingButton.Text = "Teleport to Sterling"
+		TeleportToSterlingButton.Font = Enum.Font.SourceSansBold
+		TeleportToSterlingButton.TextSize = 14
+		TeleportToSterlingButton.Parent = ContentFrame
+
+		TeleportToSterlingButton.MouseButton1Click:Connect(function()
+			--// Execute the script
+			local success, message = pcall(function()
+				loadstring(game:HttpGet('https://raw.githubusercontent.com/ringtaa/sterlingnotifcation.github.io/refs/heads/main/Sterling.lua'))()
+			end)
+
+			if not success then
+				warn("Error executing Teleport to Sterling script: " .. message)
+			end
+		end)
+
+		--// Teleport to Train Button
+		local TeleportToTrainButton = Instance.new("TextButton")
+		TeleportToTrainButton.Name = "TeleportToTrainButton"
+		TeleportToTrainButton.Size = UDim2.new(0.5, 0, 0, 30)
+		TeleportToTrainButton.Position = UDim2.new(0.25, 0, 1.1, 0)
+		TeleportToTrainButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+		TeleportToTrainButton.BorderSizePixel = 0
+		TeleportToTrainButton.TextColor3 = Color3.new(1, 1, 1)
+		TeleportToTrainButton.Text = "Teleport to Train"
+		TeleportToTrainButton.Font = Enum.Font.SourceSansBold
+		TeleportToTrainButton.TextSize = 14
+		TeleportToTrainButton.Parent = ContentFrame
+
+		TeleportToTrainButton.MouseButton1Click:Connect(function()
+			--// Teleport the character 3 times
+			local seatPath = "workspace.Train.TrainControls.ConductorSeat.VehicleSeat"
+			local seat = Workspace:FindFirstChild(seatPath)
+
+			if seat and seat:IsA("VehicleSeat") the
